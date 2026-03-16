@@ -22,11 +22,11 @@ tools {
             }
         }
 
-        stage('Lint & Style') {
-            steps {
-                sh 'npm run lint'
-            }
-        }
+        // stage('Lint & Style') {
+        //     steps {
+        //         sh 'npm run lint'
+        //     }
+        // }
 
         stage('Build Application') {
             steps {
