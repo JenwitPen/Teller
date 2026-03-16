@@ -7,6 +7,7 @@ pipeline {
         DOCKER_IMAGE = "teller-api"
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         APP_PORT = "8000"
+        TEST_PORT = "8001" 
     }
 
     stages {
@@ -54,7 +55,7 @@ stage('Test Run & Health Check') {
                     try {
                         sh "docker rm -f teller-preview || true"
                         // ไม่ต้องสร้างไฟล์แล้ว เรียกใช้ .env.dev ที่ติดมากับโค้ดได้เลย
-                        sh "docker run -d --name teller-preview -p ${APP_PORT}:${APP_PORT} --env-file .env.dev ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        sh "docker run -d --name teller-preview -p ${TEST_PORT}:${TEST_PORT} --env-file .env.dev ${DOCKER_IMAGE}:${DOCKER_TAG}"
                         
                         echo "Waiting for service to start..."
                         sh "sleep 15"
