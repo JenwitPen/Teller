@@ -48,30 +48,52 @@ tools {
             }
         }
 
-        stage('Test Run & Health Check') {
+    stage('Test Run & Health Check') {
             steps {
                 script {
                     try {
-                        // 1. สั่งรัน Container
-                        sh "docker run -d --name teller-preview -p ${APP_PORT}:${APP_PORT} ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        // 1. สร้างไฟล์ .env สำหรับเทสต์ โดยแก้ DB_SERVER และ REDIS_HOST
+                        sh '''
+                        cat <<EOF > .env.test
+                        # Database Configuration
+                        DB_PORT=1433
+                        DB_SERVER=host.docker.internal
+                        DB_DATABASE=teller
+                        DB_USER=sa
+                        DB_PASSWORD=MyPass@word
+                        DB_ENCRYPT=true
+                        DB_MULTI_SUBNET_FAILOVER=true
+                        DB_APPLICATION_INTENT=ReadWrite
+                        
+                        # Redis Configuration
+                        REDIS_HOST=host.docker.internal
+                        REDIS_PORT=6379
+                        REDIS_PASSWORD=
+                        
+                        # Application Settings
+                        CACHE_TTL_SECONDS=60
+                        JWT_EXPIRATION=300
+                        EOF
+                                                '''
+
+                        // 2. รัน Container พร้อมแนบไฟล์ .env.test เข้าไป
+                        sh "docker run -d --name teller-preview -p ${APP_PORT}:${APP_PORT} --env-file .env.test ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        
                         echo "Waiting for service to start..."
+                        sh "sleep 15" // ให้เวลา NestJS ต่อ DB และ Redis
                         
-                        // 2. เพิ่มเวลาเผื่อให้ NestJS บูทเสร็จ (เปลี่ยนจาก 10 เป็น 15-20 วินาที)
-                        sh "sleep 15"
-                        
-                        // 3. เปลี่ยน localhost เป็น host.docker.internal (สำหรับ Mac)
+                        // 3. ยิง Health Check
                         sh "curl -f http://host.docker.internal:${APP_PORT}/health/liveness"
-                        
                         echo "Health check passed!"
                     } catch (Exception e) {
-                        // 4. ถ้า Health Check พัง ให้ปริ้นท์ Log ของแอปออกมาดูก่อนลบทิ้ง
                         echo "Health check failed! Fetching container logs..."
                         sh "docker logs teller-preview"
-                        throw e // โยน Error กลับไปให้ Pipeline แจ้งเตือนว่า Failed
+                        throw e
                     } finally {
-                        // 5. ล้าง Container ทิ้งเสมอ ไม่ว่าจะผ่านหรือพัง
+                        // 4. ล้าง Container ทิ้ง
                         sh "docker stop teller-preview || true"
                         sh "docker rm teller-preview || true"
+                        sh "rm -f .env.test || true" // ลบไฟล์ .env ชั่วคราวทิ้งด้วย
                     }
                 }
             }
