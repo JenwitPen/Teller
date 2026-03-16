@@ -52,6 +52,7 @@ stage('Test Run & Health Check') {
             steps {
                 script {
                     try {
+                        sh "docker rm -f teller-preview || true"
                         // ไม่ต้องสร้างไฟล์แล้ว เรียกใช้ .env.dev ที่ติดมากับโค้ดได้เลย
                         sh "docker run -d --name teller-preview -p ${APP_PORT}:${APP_PORT} --env-file .env.dev ${DOCKER_IMAGE}:${DOCKER_TAG}"
                         
