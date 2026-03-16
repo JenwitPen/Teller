@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+tools {
+        nodejs 'node20' // 👈 ชื่อนี้ต้องตรงกับช่อง Name ในหน้า Tools (ข้อ 1)
+    }
     environment {
         DOCKER_IMAGE = "teller-api"
         DOCKER_TAG = "${env.BUILD_NUMBER}"
